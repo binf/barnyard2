@@ -1188,6 +1188,11 @@ void ParseDatabaseArgs(DatabaseData *data)
 	{
 	    data->dbRH[DB_MYSQL].mysql_reconnect =1;
 	}
+	else if(!strncasecmp(dbarg, KEYWORD_MYSQL_WAIT, strlen(KEYWORD_MYSQL_WAIT)))
+	{
+	    data->dbRH[DB_MYSQL].mysql_wait = strtoul(a1,NULL,10);
+	    LogMessage("INFO database: Setting MySQL wait_timeout to %u. \n", data->dbRH[DB_MYSQL].mysql_wait);
+	}
 #endif
 
 #ifdef ENABLE_POSTGRESQL
@@ -1277,6 +1282,14 @@ void ParseDatabaseArgs(DatabaseData *data)
 	LogMessage("INFO database: Defaulting Reconnect sleep time to 5 second \n");
 	data->dbRH[data->dbtype_id].dbReconnectSleepTime.tv_sec = 5;
     }
+    
+#ifdef ENABLE_MYSQL
+    if(data->dbRH[data->dbtype_id].mysql_wait == 0)
+    {
+	LogMessage("INFO database: Defaulting MySQL wait_timeout to 28800 \n");
+	data->dbRH[data->dbtype_id].mysql_wait = 28800;
+    }
+#endif
     
     return;
 }
@@ -4049,6 +4062,17 @@ void Connect(DatabaseData * data)
             FatalError("database Connection to database '%s' failed\n", data->dbname);
         }
 	
+        /* Setting connection timeout to defined value */
+	char SessionSQL[50];
+        sprintf(SessionSQL, "/*!40101 set @@session.wait_timeout=%u */", data->dbRH[data->dbtype_id].mysql_wait);
+        if (mysql_options(data->m_sock,  MYSQL_INIT_COMMAND, SessionSQL) != 0)
+        {
+    	    LogMessage("database: Failed to set SESSION wait_timeout option: %s\n", mysql_error(data->m_sock));
+    	    mysql_close(data->m_sock);
+    	    data->m_sock = NULL;
+    	    return;
+        }
+
         /* check if we want to connect with ssl options */
         if (data->use_ssl == 1)
         {
@@ -4776,6 +4800,17 @@ u_int32_t MYSQL_ManualConnect(DatabaseData *dbdata)
 		   dbdata->dbname);
     }
     
+    /* Setting connection timeout to defined value */
+    char SessionSQL[50];
+    sprintf(SessionSQL, "/*!40101 set @@session.wait_timeout=%u */", dbdata->dbRH[dbdata->dbtype_id].mysql_wait);
+    if (mysql_options(dbdata->m_sock,  MYSQL_INIT_COMMAND, SessionSQL) != 0)
+    {
+	LogMessage("database: Failed to set SESSION wait_timeout option: %s\n", mysql_error(dbdata->m_sock));
+	mysql_close(dbdata->m_sock);
+	dbdata->m_sock = NULL;
+	return 1;
+    }
+
     /* check if we want to connect with ssl options */
     if (dbdata->use_ssl == 1)
     {

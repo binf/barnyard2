@@ -358,6 +358,7 @@ typedef struct _dbReliabilityHandle
 
     unsigned long pThreadID; /* Used to store thread information and know if we "reconnected automaticaly" */
     my_bool mysql_reconnect; /* We will handle it via the api. */
+    u_int32_t mysql_wait;    /* MySQL wait_timeout */
 #endif /* ENABLE_MYSQL */
 
 #ifdef ENABLE_POSTGRESQL
@@ -500,14 +501,14 @@ typedef struct _DatabaseData
 #define KEYWORD_RECONNECT_SLEEP_TIME "reconnect_sleep_time"
 #define KEYWORD_DISABLE_SIGREFTABLE "disable_signature_reference_table"
 
-#define KEYWORD_MYSQL_RECONNECT "mysql_reconnect"
-
 #ifdef ENABLE_MYSQL
 #   define KEYWORD_SSL_KEY     "ssl_key"
 #   define KEYWORD_SSL_CERT    "ssl_cert"
 #   define KEYWORD_SSL_CA      "ssl_ca"
 #   define KEYWORD_SSL_CA_PATH "ssl_ca_path"
 #   define KEYWORD_SSL_CIPHER  "ssl_cipher"
+#   define KEYWORD_MYSQL_RECONNECT "mysql_reconnect"
+#   define KEYWORD_MYSQL_WAIT 	   "mysql_wait"
 #endif
 
 #ifdef ENABLE_POSTGRESQL
